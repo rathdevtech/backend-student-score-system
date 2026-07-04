@@ -150,6 +150,22 @@ class ReportController extends Controller
                 'teacher_name' => $student->class->teacher ? $student->class->teacher->name : 'N/A'
             ],
             'scores' => $scores->map(function ($s) {
+                $breakdown = [];
+                foreach ($s->subject->effective_components as $comp) {
+                    $key = $comp['key'];
+                    $scoreVal = 0.00;
+                    if (isset($s->components_scores[$key])) {
+                        $scoreVal = (float) $s->components_scores[$key];
+                    } else {
+                        $scoreVal = (float) ($s->$key ?? 0.00);
+                    }
+                    $breakdown[] = [
+                        'label' => $comp['label'],
+                        'weight' => $comp['weight'],
+                        'score' => $scoreVal
+                    ];
+                }
+
                 return [
                     'subject_name' => $s->subject->name,
                     'quiz' => (float) $s->quiz,
@@ -157,7 +173,8 @@ class ReportController extends Controller
                     'midterm' => (float) $s->midterm,
                     'final' => (float) $s->final,
                     'total' => (float) $s->total,
-                    'grade' => $s->grade
+                    'grade' => $s->grade,
+                    'components_breakdown' => $breakdown
                 ];
             }),
             'summary' => [

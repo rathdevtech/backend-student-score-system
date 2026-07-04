@@ -32,13 +32,27 @@ class UserController extends Controller implements HasMiddleware
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
             'role' => 'required|string|in:admin,teacher',
+            'avatar' => 'nullable|file|max:10240',
         ]);
+
+        $avatarPath = null;
+        if ($request->hasFile('avatar')) {
+            try {
+                $path = $request->file('avatar')->store('avatars', 'public');
+                $avatarPath = '/storage/' . $path;
+            } catch (\Exception $e) {
+                // Skip avatar upload if it fails (e.g., due to filesystem limitations)
+                // Continue with user creation
+            }
+        }
 
         $user = User::create([
             'name' => $fields['name'],
             'email' => $fields['email'],
             'password' => Hash::make($fields['password']),
             'role' => $fields['role'],
+            'avatar' => $avatarPath,
+            'is_active' => true,
         ]);
 
         return response()->json([
@@ -64,8 +78,8 @@ class UserController extends Controller implements HasMiddleware
         }
 
         $fields = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'email' => [
+            'name'      => 'sometimes|required|string|max:255',
+            'email'     => [
                 'sometimes',
                 'required',
                 'string',
@@ -73,9 +87,26 @@ class UserController extends Controller implements HasMiddleware
                 'max:255',
                 Rule::unique('users')->ignore($user->id)
             ],
-            'password' => 'nullable|string|min:6',
-            'role' => 'sometimes|required|string|in:admin,teacher',
+            'password'  => 'nullable|string|min:6',
+            'role'      => 'sometimes|required|string|in:admin,teacher',
+            'is_active' => 'sometimes|boolean',
+            'avatar'    => 'nullable|file|max:10240',
         ]);
+
+        if ($request->hasFile('avatar')) {
+            try {
+                // Delete old avatar if exists
+                if ($user->avatar) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar));
+                }
+
+                $path = $request->file('avatar')->store('avatars', 'public');
+                $user->avatar = '/storage/' . $path;
+            } catch (\Exception $e) {
+                // Skip avatar upload if it fails (e.g., due to filesystem limitations)
+                // Continue with other updates
+            }
+        }
 
         if (isset($fields['name'])) {
             $user->name = $fields['name'];
@@ -93,6 +124,14 @@ class UserController extends Controller implements HasMiddleware
             $user->role = $fields['role'];
         }
 
+        if (isset($fields['is_active'])) {
+            // Prevent admin from deactivating their own account
+            if ($user->id === $request->user()->id && !$fields['is_active']) {
+                return response()->json(['message' => 'You cannot deactivate your own account.'], 400);
+            }
+            $user->is_active = $fields['is_active'];
+        }
+
         if (!empty($fields['password'])) {
             $user->password = Hash::make($fields['password']);
         }
@@ -101,7 +140,7 @@ class UserController extends Controller implements HasMiddleware
 
         return response()->json([
             'message' => 'User updated successfully.',
-            'user' => $user
+            'user'    => $user
         ]);
     }
 

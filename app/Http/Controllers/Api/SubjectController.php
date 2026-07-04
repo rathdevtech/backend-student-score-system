@@ -38,7 +38,18 @@ class SubjectController extends Controller implements HasMiddleware
     {
         $fields = $request->validate([
             'name' => 'required|string|max:255|unique:subjects',
+            'score_components' => 'sometimes|required|array|min:1',
+            'score_components.*.key' => 'required|string',
+            'score_components.*.label' => 'required|string|max:50',
+            'score_components.*.weight' => 'required|numeric|between:0,100',
         ]);
+
+        if (isset($fields['score_components'])) {
+            $sum = collect($fields['score_components'])->sum('weight');
+            if ($sum != 100) {
+                return response()->json(['message' => 'The sum of component weights must equal 100%.'], 422);
+            }
+        }
 
         $subject = Subject::create($fields);
 
@@ -66,8 +77,20 @@ class SubjectController extends Controller implements HasMiddleware
         }
 
         $fields = $request->validate([
-            'name' => 'required|string|max:255|unique:subjects,name,' . $id,
+            'name'      => 'sometimes|required|string|max:255|unique:subjects,name,' . $id,
+            'is_active' => 'sometimes|boolean',
+            'score_components' => 'sometimes|required|array|min:1',
+            'score_components.*.key' => 'required|string',
+            'score_components.*.label' => 'required|string|max:50',
+            'score_components.*.weight' => 'required|numeric|between:0,100',
         ]);
+
+        if (isset($fields['score_components'])) {
+            $sum = collect($fields['score_components'])->sum('weight');
+            if ($sum != 100) {
+                return response()->json(['message' => 'The sum of component weights must equal 100%.'], 422);
+            }
+        }
 
         $subject->update($fields);
 

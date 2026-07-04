@@ -1,0 +1,87 @@
+[Sat Jul  4 23:26:55 2026] PHP 8.4.22 Development Server (http://127.0.0.1:8000) started
+[Sat Jul  4 23:29:12 2026] 127.0.0.1:64786 Accepted
+[Sat Jul  4 23:29:14 2026] 127.0.0.1:64786 Closing
+[Sat Jul  4 23:29:14 2026] 127.0.0.1:52510 Accepted
+[Sat Jul  4 23:29:15 2026] 127.0.0.1:52510 Closing
+[Sat Jul  4 23:29:15 2026] 127.0.0.1:59942 Accepted
+[Sat Jul  4 23:29:15 2026] 127.0.0.1:59942 Closing
+[Sat Jul  4 23:29:15 2026] 127.0.0.1:64069 Accepted
+[Sat Jul  4 23:29:16 2026] 127.0.0.1:64069 Closing
+[Sat Jul  4 23:29:16 2026] 127.0.0.1:51928 Accepted
+[Sat Jul  4 23:29:16 2026] 127.0.0.1:51928 Closing
+[Sat Jul  4 23:29:16 2026] 127.0.0.1:49958 Accepted
+[Sat Jul  4 23:29:16 2026] 127.0.0.1:49958 Closing
+[Sat Jul  4 23:29:16 2026] 127.0.0.1:55718 Accepted
+[Sat Jul  4 23:29:42 2026] 127.0.0.1:55718 Closing
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:50986 Accepted
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:50986 Closing
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:57365 Accepted
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:57365 Closing
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:57122 Accepted
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:57122 Closing
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:55239 Accepted
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:55239 Closing
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:55211 Accepted
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:55211 Closing
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:56775 Accepted
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:56775 Closing
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:57768 Accepted
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:57768 Closing
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:49720 Accepted
+[Sat Jul  4 23:29:43 2026] 127.0.0.1:64252 Accepted
+[Sat Jul  4 23:30:40 2026] 127.0.0.1:49720 Closing
+[Sat Jul  4 23:30:40 2026] 127.0.0.1:64789 Accepted
+[Sat Jul  4 23:30:40 2026] PHP Warning:  PHP Request Startup: File upload error - unable to create a temporary file in Unknown on line 0
+[Sat Jul  4 23:30:40 2026] 127.0.0.1:64789 Closing
+[Sat Jul  4 23:30:40 2026] 127.0.0.1:51749 Accepted
+[Sat Jul  4 23:30:41 2026] 127.0.0.1:51749 Closing
+[Sat Jul  4 23:30:41 2026] 127.0.0.1:58303 Accepted
+[Sat Jul  4 23:30:41 2026] PHP Warning:  PHP Request Startup: File upload error - unable to create a temporary file in Unknown on line 0
+[Sat Jul  4 23:30:41 2026] 127.0.0.1:58303 Closing
+[Sat Jul  4 23:30:41 2026] 127.0.0.1:52089 Accepted
+[Sat Jul  4 23:30:41 2026] 127.0.0.1:52089 Closing
+[Sat Jul  4 23:30:42 2026] 127.0.0.1:55651 Accepted
+[Sat Jul  4 23:30:42 2026] PHP Warning:  PHP Request Startup: File upload error - unable to create a temporary file in Unknown on line 0
+[Sat Jul  4 23:30:42 2026] 127.0.0.1:55651 Closing
+[Sat Jul  4 23:30:42 2026] 127.0.0.1:62083 Accepted
+[Sat Jul  4 23:30:42 2026] 127.0.0.1:62083 Closing
+[Sat Jul  4 23:30:42 2026] 127.0.0.1:60924 Accepted
+[Sat Jul  4 23:30:42 2026] PHP Warning:  PHP Request Startup: File upload error - unable to create a temporary file in Unknown on line 0
+[Sat Jul  4 23:30:42 2026] 127.0.0.1:60924 Closing
+[Sat Jul  4 23:30:42 2026] 127.0.0.1:59042 Accepted
+[Sat Jul  4 23:30:54 2026] 127.0.0.1:64252 Closed without sending a request; it was probably just an unused speculative preconnection
+[Sat Jul  4 23:30:54 2026] 127.0.0.1:64252 Closing
+[Sat Jul  4 23:30:54 2026] 127.0.0.1:65469 Accepted
+[Sat Jul  4 23:30:54 2026] 127.0.0.1:65469 Closing
+[Sat Jul  4 23:30:55 2026] 127.0.0.1:51615 Accepted
+[Sat Jul  4 23:30:55 2026] PHP Warning:  PHP Request Startup: File upload error - unable to create a temporary file in Unknown on line 0
+[Sat Jul  4 23:30:55 2026] 127.0.0.1:51615 Closing
+[Sat Jul  4 23:30:55 2026] 127.0.0.1:65041 Accepted
+[Sat Jul  4 23:32:02 2026] 127.0.0.1:65041 Closed without sending a request; it was probably just an unused speculative preconnection
+[Sat Jul  4 23:32:02 2026] 127.0.0.1:65041 Closing
+[Sat Jul  4 23:32:02 2026] 127.0.0.1:55658 Accepted
+[Sat Jul  4 23:32:02 2026] 127.0.0.1:55658 Closing
+[Sat Jul  4 23:32:03 2026] 127.0.0.1:65366 Accepted
+[Sat Jul  4 23:32:03 2026] 127.0.0.1:65366 Closing
+[Sat Jul  4 23:32:03 2026] 127.0.0.1:49825 Accepted
+[Sat Jul  4 23:32:03 2026] 127.0.0.1:49825 Closing
+[Sat Jul  4 23:32:03 2026] 127.0.0.1:63783 Accepted
+[Sat Jul  4 23:32:03 2026] 127.0.0.1:63783 Closing
+[Sat Jul  4 23:32:03 2026] 127.0.0.1:56995 Accepted
+[Sat Jul  4 23:32:17 2026] 127.0.0.1:56995 Closing
+[Sat Jul  4 23:32:17 2026] 127.0.0.1:59331 Accepted
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:59331 Closing
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:55846 Accepted
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:55846 Closing
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:61863 Accepted
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:61863 Closing
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:65200 Accepted
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:65200 Closing
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:63470 Accepted
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:63470 Closing
+[Sat Jul  4 23:32:18 2026] 127.0.0.1:65232 Accepted
+[Sat Jul  4 23:32:28 2026] 127.0.0.1:65232 Closing
+[Sat Jul  4 23:32:28 2026] 127.0.0.1:51887 Accepted
+[Sat Jul  4 23:32:28 2026] PHP Warning:  PHP Request Startup: File upload error - unable to create a temporary file in Unknown on line 0
+[Sat Jul  4 23:32:28 2026] 127.0.0.1:51887 Closing
+[Sat Jul  4 23:32:28 2026] 127.0.0.1:54624 Accepted

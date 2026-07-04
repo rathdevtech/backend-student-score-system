@@ -33,9 +33,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('subjects', SubjectController::class);
 
     // Students (CRUD checks admin in Controller constructor)
+    Route::post('/students/{id}/update', [StudentController::class, 'update']);
     Route::apiResource('students', StudentController::class);
 
     // Users (CRUD checks admin in Controller constructor)
+    Route::post('/users/{id}/update', [UserController::class, 'update']);
     Route::apiResource('users', UserController::class);
 
     // Scores

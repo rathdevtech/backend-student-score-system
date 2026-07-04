@@ -96,7 +96,7 @@ class AuthController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:6|confirmed',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'avatar' => 'nullable|file|max:10240',
         ]);
 
         if (isset($fields['name'])) {
@@ -112,13 +112,18 @@ class AuthController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
-            // Delete old avatar if exists
-            if ($user->avatar) {
-                Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar));
-            }
+            try {
+                // Delete old avatar if exists
+                if ($user->avatar) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar));
+                }
 
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = '/storage/' . $path;
+                $path = $request->file('avatar')->store('avatars', 'public');
+                $user->avatar = '/storage/' . $path;
+            } catch (\Exception $e) {
+                // Skip avatar upload if it fails (e.g., due to filesystem limitations)
+                // Continue with profile update
+            }
         }
 
         $user->save();

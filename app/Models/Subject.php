@@ -11,7 +11,30 @@ class Subject extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'is_active', 'score_components'];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+            'score_components' => 'array',
+        ];
+    }
+
+    public static function getDefaultComponents(): array
+    {
+        return [
+            ['key' => 'quiz', 'label' => 'Quiz', 'weight' => 20],
+            ['key' => 'assignment', 'label' => 'Assignment', 'weight' => 10],
+            ['key' => 'midterm', 'label' => 'Midterm', 'weight' => 30],
+            ['key' => 'final', 'label' => 'Final', 'weight' => 40],
+        ];
+    }
+
+    public function getEffectiveComponentsAttribute(): array
+    {
+        return $this->score_components ?: self::getDefaultComponents();
+    }
 
     public function classes(): BelongsToMany
     {

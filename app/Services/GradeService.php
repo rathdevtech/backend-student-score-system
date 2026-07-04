@@ -7,12 +7,17 @@ use App\Models\GradeRule;
 class GradeService
 {
     /**
-     * Calculate total score based on the formula:
-     * Final Score = (Quiz × 20%) + (Assignment × 10%) + (Midterm × 30%) + (Final × 40%)
+     * Calculate total score based on dynamic or default weights.
      */
-    public function calculateTotal(float $quiz, float $assignment, float $midterm, float $final): float
+    public function calculateTotal(array $scores, array $components): float
     {
-        $total = ($quiz * 0.20) + ($assignment * 0.10) + ($midterm * 0.30) + ($final * 0.40);
+        $total = 0;
+        foreach ($components as $comp) {
+            $key = $comp['key'];
+            $weight = ((float) $comp['weight']) / 100.0;
+            $val = (float) ($scores[$key] ?? 0);
+            $total += $val * $weight;
+        }
         return round($total, 2);
     }
 
@@ -43,23 +48,31 @@ class GradeService
     /**
      * Calculate and return score object containing total and grade
      */
-    public function processScore(array $data): array
+    public function processScore(array $scores, array $components): array
     {
-        $quiz = (float) ($data['quiz'] ?? 0);
-        $assignment = (float) ($data['assignment'] ?? 0);
-        $midterm = (float) ($data['midterm'] ?? 0);
-        $final = (float) ($data['final'] ?? 0);
+        $total = 0;
+        $componentScores = [];
 
-        $total = $this->calculateTotal($quiz, $assignment, $midterm, $final);
+        foreach ($components as $comp) {
+            $key = $comp['key'];
+            $weight = ((float) $comp['weight']) / 100.0;
+            $val = (float) ($scores[$key] ?? 0);
+            $total += $val * $weight;
+            $componentScores[$key] = $val;
+        }
+
+        $total = round($total, 2);
         $grade = $this->determineGrade($total);
 
         return [
-            'quiz' => $quiz,
-            'assignment' => $assignment,
-            'midterm' => $midterm,
-            'final' => $final,
+            'components_scores' => $componentScores,
             'total' => $total,
             'grade' => $grade,
+            // Fallback for legacy columns in scores table:
+            'quiz' => (float) ($scores['quiz'] ?? 0),
+            'assignment' => (float) ($scores['assignment'] ?? 0),
+            'midterm' => (float) ($scores['midterm'] ?? 0),
+            'final' => (float) ($scores['final'] ?? 0),
         ];
     }
 }

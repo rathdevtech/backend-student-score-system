@@ -29,6 +29,7 @@ class ClassController extends Controller implements HasMiddleware
         $fields = $request->validate([
             'name' => 'required|string|max:255',
             'teacher_id' => 'nullable|exists:users,id',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         $class = ClassModel::create($fields);
@@ -60,6 +61,7 @@ class ClassController extends Controller implements HasMiddleware
         $fields = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'teacher_id' => 'nullable|exists:users,id',
+            'is_active' => 'sometimes|boolean',
         ]);
 
         $class->update($fields);

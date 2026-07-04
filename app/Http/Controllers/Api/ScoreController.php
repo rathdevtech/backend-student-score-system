@@ -32,6 +32,8 @@ class ScoreController extends Controller
         $classId = $request->class_id;
         $subjectId = $request->subject_id;
 
+        $subject = \App\Models\Subject::findOrFail($subjectId);
+
         // Fetch all students in this class
         $students = Student::where('class_id', $classId)->get();
 
@@ -42,8 +44,24 @@ class ScoreController extends Controller
             ->keyBy('student_id');
 
         // Map together so that every student has an entry (even if score is null/default)
-        $grid = $students->map(function ($student) use ($scores, $subjectId) {
+        $grid = $students->map(function ($student) use ($scores, $subjectId, $subject) {
             $score = $scores->get($student->id);
+
+            // Populate components scores based on the subject's configured components
+            $comps = [];
+            foreach ($subject->effective_components as $comp) {
+                $key = $comp['key'];
+                if ($score) {
+                    if (isset($score->components_scores[$key])) {
+                        $comps[$key] = (float) $score->components_scores[$key];
+                    } else {
+                        // fallback to column value if key matches legacy names
+                        $comps[$key] = (float) ($score->$key ?? 0.00);
+                    }
+                } else {
+                    $comps[$key] = 0.00;
+                }
+            }
 
             return [
                 'student_id' => $student->id,
@@ -51,17 +69,17 @@ class ScoreController extends Controller
                 'gender' => $student->gender,
                 'score_id' => $score ? $score->id : null,
                 'subject_id' => (int) $subjectId,
-                'quiz' => $score ? (float) $score->quiz : 0.00,
-                'assignment' => $score ? (float) $score->assignment : 0.00,
-                'midterm' => $score ? (float) $score->midterm : 0.00,
-                'final' => $score ? (float) $score->final : 0.00,
+                'components' => $comps,
                 'total' => $score ? (float) $score->total : 0.00,
                 'grade' => $score ? $score->grade : 'F',
                 'is_scored' => $score ? true : false
             ];
         });
 
-        return response()->json($grid);
+        return response()->json([
+            'scores' => $grid,
+            'score_components' => $subject->effective_components
+        ]);
     }
 
     /**
@@ -73,23 +91,26 @@ class ScoreController extends Controller
         $fields = $request->validate([
             'student_id' => 'required|exists:students,id',
             'subject_id' => 'required|exists:subjects,id',
-            'quiz' => 'required|numeric|between:0,100',
-            'assignment' => 'required|numeric|between:0,100',
-            'midterm' => 'required|numeric|between:0,100',
-            'final' => 'required|numeric|between:0,100',
+            'components' => 'required|array',
         ]);
 
-        $processed = $this->gradeService->processScore($fields);
+        $subject = \App\Models\Subject::findOrFail($fields['subject_id']);
+        $processed = $this->gradeService->processScore($fields['components'], $subject->effective_components);
 
         $score = Score::updateOrCreate(
             [
                 'student_id' => $fields['student_id'],
                 'subject_id' => $fields['subject_id']
             ],
-            array_merge($fields, [
+            [
+                'components_scores' => $processed['components_scores'],
                 'total' => $processed['total'],
-                'grade' => $processed['grade']
-            ])
+                'grade' => $processed['grade'],
+                'quiz' => $processed['quiz'],
+                'assignment' => $processed['assignment'],
+                'midterm' => $processed['midterm'],
+                'final' => $processed['final'],
+            ]
         );
 
         return response()->json([
@@ -108,17 +129,15 @@ class ScoreController extends Controller
             'subject_id' => 'required|exists:subjects,id',
             'scores' => 'required|array',
             'scores.*.student_id' => 'required|exists:students,id',
-            'scores.*.quiz' => 'required|numeric|between:0,100',
-            'scores.*.assignment' => 'required|numeric|between:0,100',
-            'scores.*.midterm' => 'required|numeric|between:0,100',
-            'scores.*.final' => 'required|numeric|between:0,100',
+            'scores.*.components' => 'required|array',
         ]);
 
         $subjectId = $request->subject_id;
+        $subject = \App\Models\Subject::findOrFail($subjectId);
         $savedScores = [];
 
         foreach ($request->scores as $item) {
-            $processed = $this->gradeService->processScore($item);
+            $processed = $this->gradeService->processScore($item['components'], $subject->effective_components);
 
             $score = Score::updateOrCreate(
                 [
@@ -126,12 +145,13 @@ class ScoreController extends Controller
                     'subject_id' => $subjectId
                 ],
                 [
-                    'quiz' => $item['quiz'],
-                    'assignment' => $item['assignment'],
-                    'midterm' => $item['midterm'],
-                    'final' => $item['final'],
+                    'components_scores' => $processed['components_scores'],
                     'total' => $processed['total'],
-                    'grade' => $processed['grade']
+                    'grade' => $processed['grade'],
+                    'quiz' => $processed['quiz'],
+                    'assignment' => $processed['assignment'],
+                    'midterm' => $processed['midterm'],
+                    'final' => $processed['final'],
                 ]
             );
 
@@ -157,25 +177,21 @@ class ScoreController extends Controller
         }
 
         $fields = $request->validate([
-            'quiz' => 'sometimes|required|numeric|between:0,100',
-            'assignment' => 'sometimes|required|numeric|between:0,100',
-            'midterm' => 'sometimes|required|numeric|between:0,100',
-            'final' => 'sometimes|required|numeric|between:0,100',
+            'components' => 'required|array',
         ]);
 
-        $merged = array_merge([
-            'quiz' => $score->quiz,
-            'assignment' => $score->assignment,
-            'midterm' => $score->midterm,
-            'final' => $score->final,
-        ], $fields);
+        $subject = \App\Models\Subject::findOrFail($score->subject_id);
+        $processed = $this->gradeService->processScore($fields['components'], $subject->effective_components);
 
-        $processed = $this->gradeService->processScore($merged);
-
-        $score->update(array_merge($fields, [
+        $score->update([
+            'components_scores' => $processed['components_scores'],
             'total' => $processed['total'],
-            'grade' => $processed['grade']
-        ]));
+            'grade' => $processed['grade'],
+            'quiz' => $processed['quiz'],
+            'assignment' => $processed['assignment'],
+            'midterm' => $processed['midterm'],
+            'final' => $processed['final'],
+        ]);
 
         return response()->json([
             'message' => 'Score updated successfully.',

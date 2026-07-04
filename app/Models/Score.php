@@ -17,9 +17,17 @@ class Score extends Model
         'assignment',
         'midterm',
         'final',
+        'components_scores',
         'total',
         'grade'
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'components_scores' => 'array',
+        ];
+    }
 
     public function student(): BelongsTo
     {

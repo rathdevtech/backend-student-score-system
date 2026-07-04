@@ -11,7 +11,14 @@ class Student extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['class_id', 'name', 'photo', 'gender'];
+    protected $fillable = ['class_id', 'name', 'photo', 'gender', 'is_active'];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
 
     public function class(): BelongsTo
     {
