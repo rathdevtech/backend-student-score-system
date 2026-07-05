@@ -67,6 +67,7 @@ class ReportController extends Controller
             $rankings[] = [
                 'student_id' => $student->id,
                 'student_name' => $student->name,
+                'student_name_kh' => $student->name_kh,
                 'gender' => $student->gender,
                 'photo' => $student->photo,
                 'subjects_graded' => $subjectsCount,
@@ -144,10 +145,12 @@ class ReportController extends Controller
             'student' => [
                 'id' => $student->id,
                 'name' => $student->name,
+                'name_kh' => $student->name_kh,
                 'gender' => $student->gender,
                 'photo' => $student->photo,
                 'class_name' => $student->class->name,
-                'teacher_name' => $student->class->teacher ? $student->class->teacher->name : 'N/A'
+                'teacher_name' => $student->class->teacher ? $student->class->teacher->name : 'N/A',
+                'teacher_name_kh' => ($student->class->teacher && $student->class->teacher->name_kh) ? $student->class->teacher->name_kh : null,
             ],
             'scores' => $scores->map(function ($s) {
                 $breakdown = [];

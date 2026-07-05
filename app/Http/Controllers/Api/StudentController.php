@@ -39,6 +39,7 @@ class StudentController extends Controller implements HasMiddleware
         $fields = $request->validate([
             'class_id' => 'required|exists:classes,id',
             'name' => 'required|string|max:255',
+            'name_kh' => 'nullable|string|max:255',
             'gender' => 'nullable|string|in:Male,Female,Other',
             'photo' => 'nullable|file|max:10240',
         ]);
@@ -81,6 +82,7 @@ class StudentController extends Controller implements HasMiddleware
         $fields = $request->validate([
             'class_id'  => 'sometimes|required|exists:classes,id',
             'name'      => 'sometimes|required|string|max:255',
+            'name_kh'   => 'nullable|string|max:255',
             'gender'    => 'nullable|string|in:Male,Female,Other',
             'photo'     => 'nullable|file|max:10240',
             'is_active' => 'sometimes|boolean',

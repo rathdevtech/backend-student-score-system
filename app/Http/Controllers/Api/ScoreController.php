@@ -66,6 +66,7 @@ class ScoreController extends Controller
             return [
                 'student_id' => $student->id,
                 'student_name' => $student->name,
+                'student_name_kh' => $student->name_kh,
                 'gender' => $student->gender,
                 'score_id' => $score ? $score->id : null,
                 'subject_id' => (int) $subjectId,

@@ -11,7 +11,7 @@ class Student extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['class_id', 'name', 'photo', 'gender', 'is_active'];
+    protected $fillable = ['class_id', 'name', 'name_kh', 'photo', 'gender', 'is_active'];
 
     protected function casts(): array
     {

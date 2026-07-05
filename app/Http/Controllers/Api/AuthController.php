@@ -94,6 +94,7 @@ class AuthController extends Controller
 
         $fields = $request->validate([
             'name' => 'sometimes|required|string|max:255',
+            'name_kh' => 'nullable|string|max:255',
             'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => 'nullable|string|min:6|confirmed',
             'avatar' => 'nullable|file|max:10240',
@@ -101,6 +102,10 @@ class AuthController extends Controller
 
         if (isset($fields['name'])) {
             $user->name = $fields['name'];
+        }
+
+        if (array_key_exists('name_kh', $fields)) {
+            $user->name_kh = $fields['name_kh'];
         }
 
         if (isset($fields['email'])) {

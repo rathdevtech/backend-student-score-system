@@ -29,6 +29,7 @@ class UserController extends Controller implements HasMiddleware
     {
         $fields = $request->validate([
             'name' => 'required|string|max:255',
+            'name_kh' => 'nullable|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
             'role' => 'required|string|in:admin,teacher',
@@ -48,6 +49,7 @@ class UserController extends Controller implements HasMiddleware
 
         $user = User::create([
             'name' => $fields['name'],
+            'name_kh' => $fields['name_kh'] ?? null,
             'email' => $fields['email'],
             'password' => Hash::make($fields['password']),
             'role' => $fields['role'],
@@ -79,6 +81,7 @@ class UserController extends Controller implements HasMiddleware
 
         $fields = $request->validate([
             'name'      => 'sometimes|required|string|max:255',
+            'name_kh'   => 'nullable|string|max:255',
             'email'     => [
                 'sometimes',
                 'required',
@@ -110,6 +113,10 @@ class UserController extends Controller implements HasMiddleware
 
         if (isset($fields['name'])) {
             $user->name = $fields['name'];
+        }
+
+        if (array_key_exists('name_kh', $fields)) {
+            $user->name_kh = $fields['name_kh'];
         }
 
         if (isset($fields['email'])) {
