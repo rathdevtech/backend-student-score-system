@@ -16,6 +16,71 @@ class DashboardController extends Controller
     {
         $user = $request->user();
         
+        if ($user && $user->role === 'student') {
+            $studentId = $user->student_id;
+            $student = Student::with('class.teacher')->find($studentId);
+            
+            if (!$student) {
+                return response()->json([
+                    'role' => 'student',
+                    'summary' => [
+                        'average_score' => 0,
+                        'overall_grade' => 'F',
+                        'class_rank' => 0,
+                        'class_size' => 0,
+                        'passing_subjects' => 0,
+                        'total_subjects' => 0,
+                    ],
+                    'scores' => []
+                ]);
+            }
+            
+            $scores = Score::with('subject')->where('student_id', $studentId)->get();
+            $subjectsCount = $scores->count();
+            $averageScore = $subjectsCount > 0 ? round($scores->avg('total'), 2) : 0.00;
+            
+            $overallGrade = 'F';
+            $gradeRules = \App\Models\GradeRule::all();
+            foreach ($gradeRules as $rule) {
+                if ($averageScore >= $rule->min_score && $averageScore <= $rule->max_score) {
+                    $overallGrade = $rule->grade;
+                    break;
+                }
+            }
+            
+            $allStudentsInClass = Student::where('class_id', $student->class_id)->get();
+            $rankings = [];
+            foreach ($allStudentsInClass as $s) {
+                $sScores = Score::where('student_id', $s->id)->get();
+                $rankings[$s->id] = $sScores->count() > 0 ? $sScores->avg('total') : 0;
+            }
+            arsort($rankings);
+            $rankKeys = array_keys($rankings);
+            $rank = array_search($studentId, $rankKeys) + 1;
+            
+            $passingSubjectsCount = $scores->where('total', '>=', 50)->count();
+            
+            return response()->json([
+                'role' => 'student',
+                'summary' => [
+                    'average_score' => $averageScore,
+                    'overall_grade' => $overallGrade,
+                    'class_rank' => $rank,
+                    'class_size' => count($allStudentsInClass),
+                    'passing_subjects' => $passingSubjectsCount,
+                    'total_subjects' => $subjectsCount,
+                ],
+                'scores' => $scores->map(function ($s) {
+                    return [
+                        'subject_id' => $s->subject_id,
+                        'subject_name' => $s->subject->name,
+                        'total' => (float)$s->total,
+                        'grade' => $s->grade,
+                    ];
+                })
+            ]);
+        }
+        
         $totalStudents = Student::count();
         $totalClasses = ClassModel::count();
         $totalSubjects = Subject::count();
@@ -47,7 +112,7 @@ class DashboardController extends Controller
         }
 
         // Top students (based on total average of scores)
-        $students = Student::all();
+        $students = Student::with('user')->get();
         $studentAverages = [];
 
         foreach ($students as $student) {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -12,8 +13,25 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
-     * Handle user registration (only allowed by Admins in typical dashboards,
-     * but we support registration route for ease of setting up first-time teachers).
+     * Helper to prepare user data with dynamic permissions and role.
+     */
+    protected function prepareUserData(User $user): array
+    {
+        $permissions = [];
+        if ($user->role === 'admin') {
+            $permissions = Permission::pluck('slug')->toArray();
+        } elseif ($user->roleRelation) {
+            $permissions = $user->roleRelation->permissions()->pluck('slug')->toArray();
+        }
+
+        $userData = $user->toArray();
+        $userData['permissions'] = $permissions;
+        $userData['role'] = $user->role;
+        return $userData;
+    }
+
+    /**
+     * Handle user registration.
      */
     public function register(Request $request)
     {
@@ -21,7 +39,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6|confirmed',
-            'role' => 'string|in:admin,teacher',
+            'role' => 'string|exists:roles,name',
         ]);
 
         $user = User::create([
@@ -34,7 +52,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user' => $this->prepareUserData($user),
             'token' => $token,
         ], 201);
     }
@@ -60,7 +78,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user' => $this->prepareUserData($user),
             'token' => $token,
         ]);
     }
@@ -82,7 +100,7 @@ class AuthController extends Controller
      */
     public function profile(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json($this->prepareUserData($request->user()));
     }
 
     /**
@@ -126,8 +144,7 @@ class AuthController extends Controller
                 $path = $request->file('avatar')->store('avatars', 'public');
                 $user->avatar = '/storage/' . $path;
             } catch (\Exception $e) {
-                // Skip avatar upload if it fails (e.g., due to filesystem limitations)
-                // Continue with profile update
+                // Skip avatar upload if it fails
             }
         }
 
@@ -135,7 +152,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully.',
-            'user' => $user
+            'user' => $this->prepareUserData($user)
         ]);
     }
 }

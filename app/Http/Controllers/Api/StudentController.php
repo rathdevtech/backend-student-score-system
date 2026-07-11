@@ -7,28 +7,30 @@ use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
-class StudentController extends Controller implements HasMiddleware
+class StudentController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('admin', only: ['store', 'update', 'destroy']),
-        ];
-    }
-
     public function index(Request $request)
     {
-        $query = Student::with('class.teacher');
+        $user = $request->user();
+        $query = Student::with(['class.teacher', 'user']);
 
-        if ($request->has('class_id')) {
-            $query->where('class_id', $request->class_id);
-        }
+        if ($user && $user->role === 'student') {
+            $query->where('id', $user->student_id);
+        } else {
+            if ($request->has('class_id')) {
+                $query->where('class_id', $request->class_id);
+            }
 
-        if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            if ($request->has('search')) {
+                $search = $request->search;
+                $query->whereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%')
+                      ->orWhere('name_kh', 'like', '%' . $search . '%');
+                });
+            }
         }
 
         return response()->json($query->get());
@@ -44,27 +46,53 @@ class StudentController extends Controller implements HasMiddleware
             'photo' => 'nullable|file|max:10240',
         ]);
 
+        $photoPath = null;
         if ($request->hasFile('photo')) {
             try {
                 $path = $request->file('photo')->store('students', 'public');
-                $fields['photo'] = '/storage/' . $path;
+                $photoPath = '/storage/' . $path;
             } catch (\Exception $e) {
-                // Skip photo upload if it fails (e.g., due to filesystem limitations)
-                // Continue with student creation
+                // Skip photo upload if it fails
             }
         }
 
-        $student = Student::create($fields);
+        // 1. Create Student record first (no name or photo column in students table)
+        $student = Student::create([
+            'class_id' => $fields['class_id'],
+            'gender' => $fields['gender'] ?? null,
+        ]);
+
+        // 2. Automatically create a user account for the student
+        try {
+            $cleanedName = strtolower(str_replace(' ', '', $fields['name']));
+            $user = User::create([
+                'name' => $fields['name'],
+                'name_kh' => $fields['name_kh'] ?? null,
+                'email' => $cleanedName . $student->id . '@score.com',
+                'password' => Hash::make('password'),
+                'role' => 'student',
+                'avatar' => $photoPath,
+                'is_active' => true,
+            ]);
+            $student->update(['user_id' => $user->id]);
+        } catch (\Exception $e) {
+            // Skip user creation if it fails
+        }
 
         return response()->json([
             'message' => 'Student created successfully.',
-            'student' => $student->load('class')
+            'student' => $student->load(['class', 'user'])
         ], 201);
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $student = Student::with(['class', 'scores.subject'])->find($id);
+        $user = $request->user();
+        if ($user && $user->role === 'student' && $user->student_id != $id) {
+            return response()->json(['message' => 'Unauthorized to view other students.'], 403);
+        }
+
+        $student = Student::with(['class', 'scores.subject', 'user'])->find($id);
         if (!$student) {
             return response()->json(['message' => 'Student not found'], 404);
         }
@@ -88,26 +116,56 @@ class StudentController extends Controller implements HasMiddleware
             'is_active' => 'sometimes|boolean',
         ]);
 
+        $photoPath = null;
         if ($request->hasFile('photo')) {
             try {
-                // Delete old photo if exists
-                if ($student->photo) {
-                    Storage::disk('public')->delete(str_replace('/storage/', '', $student->photo));
+                $user = $student->user;
+                $oldPhoto = $user ? $user->avatar : null;
+                if ($oldPhoto) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $oldPhoto));
                 }
 
                 $path = $request->file('photo')->store('students', 'public');
-                $fields['photo'] = '/storage/' . $path;
+                $photoPath = '/storage/' . $path;
             } catch (\Exception $e) {
-                // Skip photo upload if it fails (e.g., due to filesystem limitations)
-                // Continue with student update
+                // Skip photo upload if it fails
             }
         }
 
-        $student->update($fields);
+        // Update student fields
+        $studentData = [];
+        if (isset($fields['class_id'])) {
+            $studentData['class_id'] = $fields['class_id'];
+        }
+        if (array_key_exists('gender', $fields)) {
+            $studentData['gender'] = $fields['gender'];
+        }
+        $student->update($studentData);
+
+        // Update user fields
+        $user = $student->user;
+        if ($user) {
+            $userData = [];
+            if (isset($fields['name'])) {
+                $userData['name'] = $fields['name'];
+            }
+            if (array_key_exists('name_kh', $fields)) {
+                $userData['name_kh'] = $fields['name_kh'];
+            }
+            if ($photoPath) {
+                $userData['avatar'] = $photoPath;
+            }
+            if (isset($fields['is_active'])) {
+                $userData['is_active'] = $fields['is_active'];
+            }
+            if (!empty($userData)) {
+                $user->update($userData);
+            }
+        }
 
         return response()->json([
             'message' => 'Student updated successfully.',
-            'student' => $student->load('class')
+            'student' => $student->load(['class', 'user'])
         ]);
     }
 
@@ -118,9 +176,12 @@ class StudentController extends Controller implements HasMiddleware
             return response()->json(['message' => 'Student not found'], 404);
         }
 
-        // Delete photo from storage if exists
-        if ($student->photo) {
-            Storage::disk('public')->delete(str_replace('/storage/', '', $student->photo));
+        $user = $student->user;
+        if ($user) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar));
+            }
+            $user->delete();
         }
 
         $student->delete();

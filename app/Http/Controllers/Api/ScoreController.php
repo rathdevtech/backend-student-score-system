@@ -35,7 +35,7 @@ class ScoreController extends Controller
         $subject = \App\Models\Subject::findOrFail($subjectId);
 
         // Fetch all students in this class
-        $students = Student::where('class_id', $classId)->get();
+        $students = Student::where('class_id', $classId)->with('user')->get();
 
         // Fetch scores for this subject
         $scores = Score::where('subject_id', $subjectId)

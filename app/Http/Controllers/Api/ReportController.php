@@ -30,7 +30,7 @@ class ReportController extends Controller
             return response()->json(['message' => 'Class not found'], 404);
         }
 
-        $students = Student::where('class_id', $classId)->get();
+        $students = Student::where('class_id', $classId)->with('user')->get();
         if ($students->isEmpty()) {
             return response()->json([
                 'class' => $class,
@@ -111,8 +111,13 @@ class ReportController extends Controller
      * Get student report card / transcript details.
      * GET /api/reports/student/{student_id}
      */
-    public function studentTranscript($studentId)
+    public function studentTranscript(Request $request, $studentId)
     {
+        $user = $request->user();
+        if ($user && $user->role === 'student' && $user->student_id != $studentId) {
+            return response()->json(['message' => 'Unauthorized to view other student transcripts.'], 403);
+        }
+
         $student = Student::with('class.teacher')->find($studentId);
         if (!$student) {
             return response()->json(['message' => 'Student not found'], 404);

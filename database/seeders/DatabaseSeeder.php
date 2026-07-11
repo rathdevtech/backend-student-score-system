@@ -8,6 +8,8 @@ use App\Models\Subject;
 use App\Models\Student;
 use App\Models\Score;
 use App\Models\GradeRule;
+use App\Models\Role;
+use App\Models\Permission;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +36,9 @@ class DatabaseSeeder extends Seeder
         ClassModel::truncate();
         User::truncate();
         GradeRule::truncate();
+        DB::table('permission_role')->truncate();
+        Permission::truncate();
+        Role::truncate();
 
         if ($driver === 'sqlite') {
             DB::statement('PRAGMA foreign_keys = ON');
@@ -41,12 +46,87 @@ class DatabaseSeeder extends Seeder
             DB::statement('SET FOREIGN_KEY_CHECKS = 1');
         }
 
-        // 2. Create Users (Admin & Teachers)
+        // 2. Create Roles
+        $adminRole = Role::create([
+            'name' => 'admin',
+            'description' => 'System Administrator with full access',
+            'is_system' => true
+        ]);
+        
+        $teacherRole = Role::create([
+            'name' => 'teacher',
+            'description' => 'Teacher / Trainer who manages scores and students',
+            'is_system' => true
+        ]);
+        
+        $studentRole = Role::create([
+            'name' => 'student',
+            'description' => 'Student who can only view their own score information',
+            'is_system' => true
+        ]);
+
+        // 3. Create Permissions
+        $permissions = [
+            // Users
+            ['name' => 'View Users', 'slug' => 'view_users', 'description' => 'View user accounts list and profiles'],
+            ['name' => 'Create Users', 'slug' => 'create_users', 'description' => 'Create new user accounts'],
+            ['name' => 'Edit Users', 'slug' => 'edit_users', 'description' => 'Edit existing user accounts and profiles'],
+            ['name' => 'Delete Users', 'slug' => 'delete_users', 'description' => 'Delete or suspend user accounts'],
+
+            // Classes
+            ['name' => 'View Classes', 'slug' => 'view_classes', 'description' => 'View list and details of classes'],
+            ['name' => 'Create Classes', 'slug' => 'create_classes', 'description' => 'Create new classes'],
+            ['name' => 'Edit Classes', 'slug' => 'edit_classes', 'description' => 'Edit class names and assigned subjects'],
+            ['name' => 'Delete Classes', 'slug' => 'delete_classes', 'description' => 'Delete classes'],
+
+            // Subjects
+            ['name' => 'View Subjects', 'slug' => 'view_subjects', 'description' => 'View list and details of subjects'],
+            ['name' => 'Create Subjects', 'slug' => 'create_subjects', 'description' => 'Create new subjects'],
+            ['name' => 'Edit Subjects', 'slug' => 'edit_subjects', 'description' => 'Edit subject names and descriptions'],
+            ['name' => 'Delete Subjects', 'slug' => 'delete_subjects', 'description' => 'Delete subjects'],
+
+            // Students
+            ['name' => 'View Students', 'slug' => 'view_students', 'description' => 'View student roster and full profiles'],
+            ['name' => 'Create Students', 'slug' => 'create_students', 'description' => 'Register new student profiles and user logins'],
+            ['name' => 'Edit Students', 'slug' => 'edit_students', 'description' => 'Update student bio data and attributes'],
+            ['name' => 'Delete Students', 'slug' => 'delete_students', 'description' => 'Delete student profiles and credentials'],
+
+            // Scores
+            ['name' => 'View Scores', 'slug' => 'view_scores', 'description' => 'View class and student grades'],
+            ['name' => 'Create Scores', 'slug' => 'create_scores', 'description' => 'Input or insert new score records'],
+            ['name' => 'Edit Scores', 'slug' => 'edit_scores', 'description' => 'Update existing student scores'],
+            ['name' => 'Delete Scores', 'slug' => 'delete_scores', 'description' => 'Clear or delete student scores'],
+
+            // Custom
+            ['name' => 'View Own Student Info', 'slug' => 'view_own_student_info', 'description' => 'View own scores and profile info'],
+            ['name' => 'Manage Roles & Permissions', 'slug' => 'manage_roles_permissions', 'description' => 'Configure roles and their mapping permissions'],
+        ];
+
+        foreach ($permissions as $p) {
+            Permission::create($p);
+        }
+
+        // 4. Assign Permissions to Roles
+        $adminRole->permissions()->sync(Permission::pluck('id'));
+        $teacherRole->permissions()->sync(Permission::whereIn('slug', [
+            'view_classes',
+            'view_subjects',
+            'view_students',
+            'create_students',
+            'edit_students',
+            'view_scores',
+            'create_scores',
+            'edit_scores'
+        ])->pluck('id'));
+        $studentRole->permissions()->sync(Permission::whereIn('slug', ['view_own_student_info'])->pluck('id'));
+
+        // 5. Create Users (Admin & Teachers)
         $admin = User::create([
             'name' => 'System Administrator',
             'email' => 'admin@score.com',
             'password' => Hash::make('password'),
             'role' => 'admin',
+            'role_id' => $adminRole->id,
             'avatar' => null
         ]);
 
@@ -55,6 +135,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'teacher@score.com',
             'password' => Hash::make('password'),
             'role' => 'teacher',
+            'role_id' => $teacherRole->id,
             'avatar' => null
         ]);
 
@@ -63,10 +144,11 @@ class DatabaseSeeder extends Seeder
             'email' => 'teacher2@score.com',
             'password' => Hash::make('password'),
             'role' => 'teacher',
+            'role_id' => $teacherRole->id,
             'avatar' => null
         ]);
 
-        // 3. Create Classes
+        // 6. Create Classes
         $classA = ClassModel::create([
             'name' => 'Class 2027A',
             'teacher_id' => $teacher1->id
@@ -77,26 +159,24 @@ class DatabaseSeeder extends Seeder
             'teacher_id' => $teacher2->id
         ]);
 
-        // 4. Create Subjects
+        // 7. Create Subjects
         $math = Subject::create(['name' => 'Mathematics']);
         $english = Subject::create(['name' => 'English Language']);
         $programming = Subject::create(['name' => 'Computer Programming']);
 
-        // 5. Assign Subjects to Classes with Teachers
-        // Class A gets all three subjects taught by Professor Miller (teacher1)
+        // 8. Assign Subjects to Classes with Teachers
         DB::table('class_subject')->insert([
             ['class_id' => $classA->id, 'subject_id' => $math->id, 'teacher_id' => $teacher1->id, 'created_at' => now(), 'updated_at' => now()],
             ['class_id' => $classA->id, 'subject_id' => $english->id, 'teacher_id' => $teacher1->id, 'created_at' => now(), 'updated_at' => now()],
             ['class_id' => $classA->id, 'subject_id' => $programming->id, 'teacher_id' => $teacher1->id, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // Class B gets Math and Programming taught by Professor Connor (teacher2)
         DB::table('class_subject')->insert([
             ['class_id' => $classB->id, 'subject_id' => $math->id, 'teacher_id' => $teacher2->id, 'created_at' => now(), 'updated_at' => now()],
             ['class_id' => $classB->id, 'subject_id' => $programming->id, 'teacher_id' => $teacher2->id, 'created_at' => now(), 'updated_at' => now()],
         ]);
 
-        // 6. Create Students
+        // 9. Create Students & Student User accounts
         $studentsA = [
             ['name' => 'Alice Johnson', 'gender' => 'Female'],
             ['name' => 'Bob Smith', 'gender' => 'Male'],
@@ -106,12 +186,23 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($studentsA as $s) {
-            Student::create([
+            $studentObj = Student::create([
                 'class_id' => $classA->id,
-                'name' => $s['name'],
                 'gender' => $s['gender'],
-                'photo' => null
             ]);
+
+            // Create student login user account
+            $cleanedEmail = strtolower(str_replace(' ', '', $s['name'])) . '@score.com';
+            $userObj = User::create([
+                'name' => $s['name'],
+                'email' => $cleanedEmail,
+                'password' => Hash::make('password'),
+                'role' => 'student',
+                'role_id' => $studentRole->id,
+                'avatar' => null,
+                'is_active' => true
+            ]);
+            $studentObj->update(['user_id' => $userObj->id]);
         }
 
         $studentsB = [
@@ -121,28 +212,36 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($studentsB as $s) {
-            Student::create([
+            $studentObj = Student::create([
                 'class_id' => $classB->id,
-                'name' => $s['name'],
                 'gender' => $s['gender'],
-                'photo' => null
             ]);
+
+            // Create student login user account
+            $cleanedEmail = strtolower(str_replace(' ', '', $s['name'])) . '@score.com';
+            $userObj = User::create([
+                'name' => $s['name'],
+                'email' => $cleanedEmail,
+                'password' => Hash::make('password'),
+                'role' => 'student',
+                'role_id' => $studentRole->id,
+                'avatar' => null,
+                'is_active' => true
+            ]);
+            $studentObj->update(['user_id' => $userObj->id]);
         }
 
-        // 7. Create Grade Rules
+        // 10. Create Grade Rules
         GradeRule::create(['min_score' => 85, 'max_score' => 100, 'grade' => 'A']);
         GradeRule::create(['min_score' => 70, 'max_score' => 84.99, 'grade' => 'B']);
         GradeRule::create(['min_score' => 55, 'max_score' => 69.99, 'grade' => 'C']);
         GradeRule::create(['min_score' => 50, 'max_score' => 54.99, 'grade' => 'D']);
         GradeRule::create(['min_score' => 0, 'max_score' => 49.99, 'grade' => 'F']);
 
-        // 8. Create some initial Scores
-        // Let's score Alice, Bob, and Charlie for Class A
-        $alice = Student::where('name', 'Alice Johnson')->first();
-        $bob = Student::where('name', 'Bob Smith')->first();
+        // 11. Create some initial Scores
+        $alice = User::where('name', 'Alice Johnson')->first()->student;
+        $bob   = User::where('name', 'Bob Smith')->first()->student;
         
-        // Formula: Total = (Quiz * 20%) + (Assignment * 10%) + (Midterm * 30%) + (Final * 40%)
-        // Alice Math: 90, 85, 88, 92 -> Total: 18 + 8.5 + 26.4 + 36.8 = 89.7 -> A
         Score::create([
             'student_id' => $alice->id,
             'subject_id' => $math->id,
@@ -154,7 +253,6 @@ class DatabaseSeeder extends Seeder
             'grade' => 'A'
         ]);
 
-        // Alice Programming: 95, 90, 92, 94 -> Total: 19 + 9 + 27.6 + 37.6 = 93.2 -> A
         Score::create([
             'student_id' => $alice->id,
             'subject_id' => $programming->id,
@@ -166,7 +264,6 @@ class DatabaseSeeder extends Seeder
             'grade' => 'A'
         ]);
 
-        // Bob Math: 60, 50, 55, 62 -> Total: 12 + 5 + 16.5 + 24.8 = 58.3 -> C
         Score::create([
             'student_id' => $bob->id,
             'subject_id' => $math->id,
@@ -178,7 +275,6 @@ class DatabaseSeeder extends Seeder
             'grade' => 'C'
         ]);
 
-        // Bob Programming: 45, 40, 50, 48 -> Total: 9 + 4 + 15 + 19.2 = 47.2 -> F
         Score::create([
             'student_id' => $bob->id,
             'subject_id' => $programming->id,

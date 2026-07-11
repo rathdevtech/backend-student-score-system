@@ -8,17 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
-
-class UserController extends Controller implements HasMiddleware
+class UserController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            'admin',
-        ];
-    }
 
     public function index()
     {
@@ -32,7 +23,8 @@ class UserController extends Controller implements HasMiddleware
             'name_kh' => 'nullable|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
-            'role' => 'required|string|in:admin,teacher',
+            'role' => 'required|string|exists:roles,name',
+            'student_id' => 'nullable|exists:students,id',
             'avatar' => 'nullable|file|max:10240',
         ]);
 
@@ -56,6 +48,11 @@ class UserController extends Controller implements HasMiddleware
             'avatar' => $avatarPath,
             'is_active' => true,
         ]);
+
+        if (!empty($fields['student_id'])) {
+            \App\Models\Student::where('user_id', $user->id)->update(['user_id' => null]);
+            \App\Models\Student::where('id', $fields['student_id'])->update(['user_id' => $user->id]);
+        }
 
         return response()->json([
             'message' => 'User created successfully.',
@@ -91,7 +88,8 @@ class UserController extends Controller implements HasMiddleware
                 Rule::unique('users')->ignore($user->id)
             ],
             'password'  => 'nullable|string|min:6',
-            'role'      => 'sometimes|required|string|in:admin,teacher',
+            'role'      => 'sometimes|required|string|exists:roles,name',
+            'student_id' => 'nullable|exists:students,id',
             'is_active' => 'sometimes|boolean',
             'avatar'    => 'nullable|file|max:10240',
         ]);
@@ -129,6 +127,13 @@ class UserController extends Controller implements HasMiddleware
                 return response()->json(['message' => 'You cannot change your own administrator role.'], 400);
             }
             $user->role = $fields['role'];
+        }
+
+        if (array_key_exists('student_id', $fields)) {
+            \App\Models\Student::where('user_id', $user->id)->update(['user_id' => null]);
+            if (!empty($fields['student_id'])) {
+                \App\Models\Student::where('id', $fields['student_id'])->update(['user_id' => $user->id]);
+            }
         }
 
         if (isset($fields['is_active'])) {

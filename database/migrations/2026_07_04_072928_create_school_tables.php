@@ -39,8 +39,6 @@ return new class extends Migration
         Schema::create('students', function (Blueprint $table) {
             $table->id();
             $table->foreignId('class_id')->constrained('classes')->onDelete('cascade');
-            $table->string('name');
-            $table->string('photo')->nullable();
             $table->string('gender')->nullable();
             $table->timestamps();
         });

@@ -7,17 +7,8 @@ use App\Models\ClassModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
-
-class ClassController extends Controller implements HasMiddleware
+class ClassController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('admin', only: ['store', 'update', 'destroy', 'assignSubjects']),
-        ];
-    }
 
     public function index()
     {

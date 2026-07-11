@@ -6,17 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Illuminate\Routing\Controllers\Middleware;
-
-class SubjectController extends Controller implements HasMiddleware
+class SubjectController extends Controller
 {
-    public static function middleware(): array
-    {
-        return [
-            new Middleware('admin', only: ['store', 'update', 'destroy']),
-        ];
-    }
 
     public function index()
     {
